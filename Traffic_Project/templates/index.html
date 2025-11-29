@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Traffic Camera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background-color: #111; color: white; text-align: center; font-family: Arial; }
+        video { width: 100%; max-width: 600px; border: 2px solid #00ff00; }
+        #stats { font-size: 20px; margin-top: 15px; font-weight: bold; }
+        .red-box { color: #ff4444; }
+        .green-box { color: #44ff44; }
+    </style>
+</head>
+<body>
+    <h2>Traffic AI Sender</h2>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="stats">Waiting for server...</div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const stats = document.getElementById('stats');
+        const context = canvas.getContext('2d');
+
+        // 1. Access Back Camera
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: { exact: "environment" } } // Tries to use back camera
+        }).catch(() => {
+            return navigator.mediaDevices.getUserMedia({ video: true }); // Fallback
+        }).then(stream => {
+            video.srcObject = stream;
+            // Start sending every 1.5 seconds
+            setInterval(sendFrame, 1500); 
+        });
+
+        function sendFrame() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob, 'frame.jpg');
+
+                fetch('/predict', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    stats.innerHTML = `
+                        Lane A: ${data.countA} | Lane B: ${data.countB} <br>
+                        <span class="${data.lane === 'A' ? 'green-box' : 'red-box'}">DECISION: LANE ${data.lane}</span>
+                    `;
+                })
+                .catch(err => console.log("Upload error", err));
+            }, 'image/jpeg', 0.5); // Quality 0.5 for speed
+        }
+    </script>
+</body>
+</html>
