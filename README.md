@@ -111,6 +111,9 @@ Connect your components to the ESP32 pins exactly like this:
 3.  Click **"Allow Camera"**.
 4.  You should now see the camera video on your phone!
 
+### Window 4: The laptop
+open: http://127.0.0.1:5000/monitor
+
 ---
 
 ## 🤖 Step 4: Connect the ESP32
